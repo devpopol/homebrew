@@ -23,6 +23,7 @@ class Mysql < Formula
   option 'with-blackhole-storage-engine', 'Compile with the BLACKHOLE storage engine enabled'
   option 'enable-local-infile', 'Build with local infile loading support'
   option 'enable-debug', 'Build with debug support'
+  option 'with-sphinx-se', 'compile with SphinxSE storage engine enabled'
 
   conflicts_with 'mariadb',
     :because => "mysql and mariadb install the same binaries."
@@ -61,6 +62,15 @@ class Mysql < Formula
       args << "-DENABLE_DOWNLOADS=ON"
     else
       args << "-DWITH_UNIT_TESTS=OFF"
+    end
+    if build.include? 'with-sphinx-se'
+      mysql_build_dir = Dir.pwd
+      sphinx_formula  = Formula.factory('sphinx')
+
+      sphinx_formula.send(:stage) do
+        sphinx_formula.system "cp -R mysqlse #{mysql_build_dir}/storage/sphinx"
+      end
+      args << "-DWITH_SPHINX_STORAGE_ENGINE=1"
     end
 
     # Build the embedded server
@@ -142,6 +152,13 @@ class Mysql < Formula
         launchctl load -w ~/Library/LaunchAgents/#{plist_path.basename}
 
     You may also need to edit the plist to use the correct "UserName".
+
+    If you installed SphinxSE:
+      * install the plugin by doing:
+      #login mysql with user root
+      mysql>INSTALL PLUGIN sphinx SONAME "ha_sphinx.so"
+      mysql>SHOW ENGINES;
+      #you'll see SPHINX in the ENGINE list.
 
     EOS
   end
